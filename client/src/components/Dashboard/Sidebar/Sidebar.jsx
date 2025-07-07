@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { GrLogout } from 'react-icons/gr'
 import { FcSettings } from 'react-icons/fc'
 import { AiOutlineBars } from 'react-icons/ai'
-import { BsGraphUp } from 'react-icons/bs'
+
 import MenuItem from './Menu/MenuItem'
 
 import useAuth from '../../../hooks/useAuth'
@@ -14,11 +14,11 @@ import CustomerMenu from './Menu/CustomerMenu'
 import logo from '../../../assets/images/logo-flat.png'
 const Sidebar = () => {
   const { logOut } = useAuth()
-  const [isActive, setActive] = useState(false)
+  const [isActive, setIsActive] = useState(false)
 
   // Sidebar Responsive Handler
   const handleToggle = () => {
-    setActive(!isActive)
+    setIsActive(!isActive)
   }
   return (
     <>
@@ -74,11 +74,6 @@ const Sidebar = () => {
               <CustomerMenu />
               <SellerMenu />
 
-              <MenuItem
-                icon={BsGraphUp}
-                label='Statistics'
-                address='/dashboard'
-              />
               <AdminMenu />
             </nav>
           </div>
