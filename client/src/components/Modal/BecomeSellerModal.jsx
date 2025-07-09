@@ -1,5 +1,33 @@
 import { Dialog, DialogTitle, DialogPanel } from '@headlessui/react'
+import useAxiosSecure from '../../hooks/useAxiosSecure'
+import { useMutation } from '@tanstack/react-query'
+import useAuth from '../../hooks/useAuth'
+import toast from 'react-hot-toast'
+
+
 const BecomeSellerModal = ({ closeModal, isOpen }) => {
+  const {user} = useAuth()
+  const axiosSecure = useAxiosSecure();
+  const {mutate} = useMutation({
+    mutationFn: async () => {
+      const { data } = await axiosSecure.patch(
+        `/become-seller-request/${user?.email}`,
+      
+      )
+      return data
+    },
+    onSuccess:data => {
+      console.log(data)
+
+      toast.success('Request successfully sent.')
+      closeModal()
+    },
+    onError: error => {
+      console.log(error)
+    }
+  });
+
+ 
   return (
     <Dialog
       open={isOpen}
@@ -27,6 +55,7 @@ const BecomeSellerModal = ({ closeModal, isOpen }) => {
             <hr className='mt-8 ' />
             <div className='flex mt-2 justify-around'>
               <button
+              onClick={mutate}
                 type='button'
                 className='inline-flex justify-center rounded-md border border-transparent bg-green-100 px-4 py-2 text-sm font-medium text-green-900 hover:bg-green-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2'
               >
