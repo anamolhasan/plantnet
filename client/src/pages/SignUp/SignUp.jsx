@@ -3,7 +3,7 @@ import { FcGoogle } from 'react-icons/fc'
 import useAuth from '../../hooks/useAuth'
 import { toast } from 'react-hot-toast'
 import { TbFidgetSpinner } from 'react-icons/tb'
-import { imageUpload } from '../../api/utils'
+import { imageUpload, saveUserInDb } from '../../api/utils'
 
 const SignUp = () => {
   const { createUser, updateUserProfile, signInWithGoogle, loading } = useAuth()
@@ -26,11 +26,16 @@ const SignUp = () => {
       const result = await createUser(email, password)
 
       //3. Save username & profile photo
-      await updateUserProfile(
-        name,
-        imageURL
-      )
+      await updateUserProfile(name, imageURL)
       console.log(result)
+
+      const userData = {
+        name,
+        email,
+        image: imageURL,
+      }
+      // save user data in db
+      await saveUserInDb(userData)
 
       navigate('/')
       toast.success('Signup Successful')
@@ -43,9 +48,16 @@ const SignUp = () => {
   // Handle Google Signin
   const handleGoogleSignIn = async () => {
     try {
-      //User Registration using google
-      await signInWithGoogle()
-
+       //User Registration using google
+            const result = await signInWithGoogle()
+            const userData = {
+              name:result?.user?.displayName,
+              email:result?.user?.email,
+              image:result?.user?.photoURL
+            }
+            // update user db
+            await saveUserInDb(userData)
+            
       navigate('/')
       toast.success('Signup Successful')
     } catch (err) {
