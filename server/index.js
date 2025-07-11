@@ -51,6 +51,15 @@ async function run() {
   const usersCollection = db.collection("users");
 
   try {
+    // Admin Verify
+    const verifyAdmin = async (req, res, next) => {
+      const email = req?.user?.email
+      const user = await usersCollection.findOne()
+
+
+      next()
+    }
+
     // Generate jwt token
     app.post("/jwt", async (req, res) => {
       const email = req.body;
@@ -171,49 +180,100 @@ async function run() {
           quantity:
             status === "increment" ? quantityToUpdate : -quantityToUpdate,
         },
-      }
-      const result = await plantsCollection.updateOne(filter, updateDoc)
-      res.send(result)
+      };
+      const result = await plantsCollection.updateOne(filter, updateDoc);
+      res.send(result);
     });
 
     // get all user for admin
-    app.get('/all-users',verifyToken, async(req, res) => {
+    app.get("/all-users", verifyToken, async (req, res) => {
       const filter = {
-          email: { $ne :  req?.user?.email}
-      }
-      const result = await usersCollection.find(filter).toArray()
-      res.send(result)
-    })
+        email: { $ne: req?.user?.email },
+      };
+      const result = await usersCollection.find(filter).toArray();
+      res.send(result);
+    });
 
     // update a user's role
-    app.patch('/user/role/update/:email',verifyToken, async (req, res) => {
-      const email = req.params.email
-      const {role} = req.body
-      const filter = {email: email}
+    app.patch("/user/role/update/:email", verifyToken, async (req, res) => {
+      const email = req.params.email;
+      const { role } = req.body;
+      const filter = { email: email };
       const updateDoc = {
         $set: {
           role,
-          status: 'verified'
-        }
-      }
-      const result = await usersCollection.updateOne(filter, updateDoc)
-      res.send(result)
-    })
+          status: "verified",
+        },
+      };
+      const result = await usersCollection.updateOne(filter, updateDoc);
+      res.send(result);
+    });
 
     // become seller request
-    app.patch('/become-seller-request/:email',verifyToken, async (req, res) => {
-      const email = req.params.email
-      
-      const filter = {email: email}
-      const updateDoc = {
-        $set: {
-   
-          status: 'requested'
-        }
+    app.patch(
+      "/become-seller-request/:email",
+      verifyToken,
+      async (req, res) => {
+        const email = req.params.email;
+
+        const filter = { email: email };
+        const updateDoc = {
+          $set: {
+            status: "requested",
+          },
+        };
+        const result = await usersCollection.updateOne(filter, updateDoc);
+        res.send(result);
       }
-      const result = await usersCollection.updateOne(filter, updateDoc)
-      res.send(result)
-    })
+    );
+
+    // admin status
+    app.get("/admin-status", verifyToken, verifyAdmin, async (req, res) => {
+      // const totalSeller = await usersCollection.countDocuments()
+      const totalUser = await usersCollection.estimatedDocumentCount();
+      const totalPlant = await plantsCollection.estimatedDocumentCount();
+      const totalOrder = await ordersCollection.estimatedDocumentCount();
+
+      // mongodb aggregation
+      const result = await ordersCollection
+        .aggregate([
+          {
+            $addFields: {
+              createdAt: { $toDate: "$_id" },
+            },
+          },
+          {
+            // Group data by data
+            $group: {
+              _id: {
+                $dateToString: {
+                  format: "%Y-%m-%d",
+                  date: "$createdAt",
+                },
+              },
+              revenue: { $sum: "$price" },
+              order: { $sum: 1 },
+            },
+          },
+        ])
+        .toArray()
+
+        const barChartData = result.map(data => ({
+          date:data._id,
+          revenue: data.revenue,
+          order: data.order,
+        }))
+        const totalRevenue = result.reduce((sum, data)=> sum + data?.revenue, 0)
+
+      res.send({
+        totalUser,
+        totalPlant,
+        barChartData,
+        totalOrder,
+        totalRevenue,
+      })
+    });
+
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
